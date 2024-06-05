@@ -1,0 +1,87 @@
+defaults:
+  - _self_
+
+seeds: 19
+
+tag: null
+vec_envs: 1
+
+
+server:
+  _target_: buffer.ServerBuffer
+  dataset: medium-replay
+  sample_type: traj_length
+  pos_encoding: absolute
+  context_len: ${model.context_len}
+  gamma: 1.0
+
+
+client:
+  _target_: buffer.ClientBuffer
+  env_name: ${env.env_name}
+  dataset: ${server.dataset}
+  sample_type: traj_length
+  pos_encoding: absolute
+  context_len: ${model.context_len}
+  gamma: 1.0
+
+
+  
+model:
+  _target_: model.DecisionTransformer
+  n_heads: 1
+  n_blocks: 3
+  drop_p: 0.1
+  hidden_dim: 128
+  context_len: 20
+  reward_scale: 1000
+  max_timestep: 1000
+
+hydra:
+  job:
+    chdir: true
+  run:
+    dir: ./runs/${now:%Y-%m-%d}/${now:%H-%M-%S}_${hydra.job.override_dirname}
+
+train:
+  client_num:
+    - 10
+    - 10
+    - 10
+  iid: True
+  env_name:
+    - HalfCheetah
+    - Hopper
+    - Walker2d
+  rounds: 200
+  client_timestep:
+    - 300
+    - 300
+    - 300
+  server_timestep:
+    - 1000
+    - 1000
+    - 1000
+  rtg_target:
+    - 12000
+    - 3600
+    - 5000
+  interval: 1
+  lr: 1e-4
+  weight_decay: 1e-4
+  vec_envs: ${vec_envs}
+  timesteps: 20_000
+  batch_size: 64
+  plot_interval: 200
+  eval_interval: 200
+  eval_episodes: 10
+  warmup_steps: 10_000
+
+checkpoint:
+  ifuse: False
+  data: 2024-01-02
+  time: 16-14-50
+  dir: /runs/${checkpoint.data}/${checkpoint.time}_
+  cp_round: 177
+  run:
+    dir: ./runs/${now:%Y-%m-%d}/${now:%H-%M-%S}_${hydra.job.override_dirname}
